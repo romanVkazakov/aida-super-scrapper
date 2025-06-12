@@ -1,0 +1,19 @@
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@
+   worker:
+     <<: *base
+     build:
+       context: .
+       dockerfile: Dockerfile
+       target: worker
++
++  scraper-render:
++    build:
++      context: .
++      dockerfile: Dockerfile.render
++    restart: unless-stopped
++    depends_on:
++      - redis
++    ports:
++      - "8890:8890"

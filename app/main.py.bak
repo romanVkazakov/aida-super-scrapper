@@ -1,0 +1,39 @@
+from log_config import init_logging
+init_logging(__name__)
+from fastapi import FastAPI
+from prometheus_client import Counter, Gauge, CollectorRegistry, generate_latest, CONTENT_TYPE_LATEST
+import redis
+import asyncio
+from health import health_summary
+from domain_limiter import throttle
+import logging, backoff, asyncio
+from fastapi import FastAPI, HTTPException
+from prometheus_client import Counter, Gauge, CollectorRegistry, generate_latest, CONTENT_TYPE_LATEST
+import redis
+from pydantic import BaseModel, HttpUrl
+
+from cache import cached_fetch_html
+from extract import smart_extract
+
+logging.basicConfig(level=logging.INFO)
+api = FastAPI(title="AIDA Super Scraper")
+
+class Req(BaseModel):
+    url: HttpUrl
+
+@api.post("/scrape")
+@backoff.on_exception(backoff.expo, Exception, max_time=60)
+async def scrape(req: Req):
+    scrape_success.inc()
+    await throttle(str(req.url))
+    try:
+        html = await cached_fetch_html(str(req.url))
+        data = smart_extract(str(req.url), html)
+        return {"status": "ok", "data": data}
+    except Exception as e:
+        logging.exception("scrape failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api.get("/health")
+async def health():
+    return await health_summary()

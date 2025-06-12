@@ -1,0 +1,26 @@
+--- a/app/extract.py
++++ b/app/extract.py
+@@
+-from bs4 import BeautifulSoup
+-# …
++from bs4 import BeautifulSoup
++
+ def parse(html: str, url: str) -> dict:
+     soup = BeautifulSoup(html, "lxml")
+@@
+-    title_el = soup.select_one("meta[property='og:title']") or soup.select_one("h1")
+-    if title_el:
+-        title = title_el.get("content") if title_el.has_attr("content") else title_el.get_text(strip=True)
+-    else:
+-        title = ""
++    # 1) og:title   2) <h1>   →  если оба промахнулись → 3) обычный <title>
++    title_el = soup.select_one("meta[property='og:title']") or soup.select_one("h1")
++    if title_el:
++        title = (
++            title_el.get("content")
++            if title_el.has_attr("content")
++            else title_el.get_text(strip=True)
++        )
++    else:
++        title_tag = soup.title
++        title = title_tag.get_text(strip=True) if title_tag else ""

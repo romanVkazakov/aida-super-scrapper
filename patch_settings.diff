@@ -1,0 +1,15 @@
+--- a/app/settings.py
++++ b/app/settings.py
+@@
+-from pydantic_settings import BaseSettings
+-from pydantic import AnyUrl
+-
+-class Settings(BaseSettings):
+-    REDIS_URL: AnyUrl
++from pydantic_settings import BaseSettings
++
++class Settings(BaseSettings):
++    REDIS_URL: str
+@@
+-S = Settings(_env_file=".env")
++S = Settings(_env_file=".env")

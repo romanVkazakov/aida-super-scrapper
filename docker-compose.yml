@@ -1,0 +1,43 @@
+
+services:
+  api:
+    build: .
+    container_name: scraper-api
+    restart: unless-stopped
+    env_file: [.env]
+    ports: ["8888:8000"]
+    depends_on: [tor, redis]
+
+  worker:
+    build: .
+    container_name: scraper-worker
+    restart: unless-stopped
+    command: celery -A tasks worker --loglevel=info --concurrency=4
+    env_file: [.env]
+    depends_on: [tor, redis, dns]
+
+  beat:
+    build: .
+    container_name: scraper-beat
+    restart: unless-stopped
+    command: celery -A tasks beat --loglevel=info
+    env_file: [.env]
+    depends_on: [tor, redis]
+
+  redis:
+    image: redis:7-alpine
+    container_name: scraper-redis
+    restart: unless-stopped
+
+  dns:
+    image: jpillora/dnsmasq
+    container_name: scraper-dns
+    restart: unless-stopped
+    command: -A /#/1.1.1.1
+    ports: ["5053:53/udp"]
+
+  tor:
+    image: dperson/torproxy
+    container_name: scraper-tor
+    restart: unless-stopped
+    ports: ["9050:9050"]
