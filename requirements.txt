@@ -1,0 +1,22 @@
+fastapi
+uvicorn[standard]
+trafilatura
+newspaper3k
+readability-lxml
+fake-useragent
+anticaptchaofficial
+backoff
+python-dotenv
+celery[redis]
+aiohttp
+dnspython
+pydantic<2
+redis>=5.0
+aiohttp-socks>=0.8
+python-json-logger>=2.0
+# stdlib uuid, placeholder
+stem>=1.8
+aiohttp_socks>=0.8
+playwright==1.44.0
+prometheus-client==0.20.0
+pytest==8.2.0
