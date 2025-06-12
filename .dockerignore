@@ -1,0 +1,14 @@
+# исключаем всё
+**
+
+# включаем нужное
+!app/**
+!tasks.py
+!celery_app.py
+!requirements*.txt
+!Dockerfile*
+!.dockerignore
+!README*
+!ua_list.txt
+!lang_list.txt
+!proxies.txt
