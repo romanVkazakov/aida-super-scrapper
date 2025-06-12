@@ -7,6 +7,10 @@ services:
     env_file: [.env]
     ports: ["8888:8000"]
     depends_on: [tor, redis]
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
 
   worker:
     build: .

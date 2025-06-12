@@ -45,10 +45,11 @@ def _title_date_from_html(raw_html: str):
             if date:
                 break
 
-    return title, date
+    return title or "", date
 
-def smart_extract(url: str, raw_html: str | None = None):
-    raw_html = raw_html or fetch_url(url)
+def smart_extract(url: str, raw_html: str):
+    if not raw_html:
+        raw_html = fetch_url(url)
 
     # 1) Trafilatura
     doc_str = extract(raw_html, output_format="json")
