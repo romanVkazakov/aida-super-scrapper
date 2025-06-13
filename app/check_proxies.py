@@ -4,7 +4,7 @@ import ssl
 import pathlib
 
 PROXIES_FILE = "/app/proxies.txt"
-OUTPUT_FILE  = "/app/good_proxies.txt"
+OUTPUT_FILE = "/app/good_proxies.txt"
 
 # Загружаем список прокси
 p = pathlib.Path(PROXIES_FILE)
@@ -13,6 +13,7 @@ if not p.exists():
     exit(1)
 with open(PROXIES_FILE, "r") as f:
     proxies = [line.strip() for line in f if line.strip()]
+
 
 async def test_proxy(proxy: str) -> bool:
     test_url = "http://httpbin.org/ip"
@@ -25,11 +26,13 @@ async def test_proxy(proxy: str) -> bool:
     except:
         return False
 
+
 async def run_tests(all_proxies):
     tasks = [asyncio.create_task(test_proxy(p)) for p in all_proxies]
     results = await asyncio.gather(*tasks)
     # возвращаем только те прокси, которые прошли
     return [p for p, ok in zip(all_proxies, results) if ok]
+
 
 def main():
     working = asyncio.run(run_tests(proxies))
@@ -40,6 +43,7 @@ def main():
         print(f"Найдено {len(working)} рабочих прокси. Сохранено в {OUTPUT_FILE}.")
     else:
         print("Не удалось найти ни одного рабочего прокси.")
+
 
 if __name__ == "__main__":
     main()

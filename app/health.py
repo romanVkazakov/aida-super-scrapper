@@ -1,14 +1,18 @@
 from app.log_config import init_logging
+
 init_logging(__name__)
-import time, asyncio, aiohttp
+import time
+import asyncio
+import aiohttp
 from aiohttp_socks import ProxyConnector
 import redis.asyncio as aioredis
 from app.settings import get_settings
 
 S = get_settings()
 REDIS = aioredis.from_url(str(S.REDIS_URL), decode_responses=True)
-URL   = "https://check.torproject.org/api/ip"
-TO    = aiohttp.ClientTimeout(total=8)
+URL = "https://check.torproject.org/api/ip"
+TO = aiohttp.ClientTimeout(total=8)
+
 
 async def check_tor() -> bool:
     try:
@@ -19,11 +23,13 @@ async def check_tor() -> bool:
     except Exception:
         return False
 
+
 async def count_good_proxies() -> int:
     n = 0
     async for _ in REDIS.scan_iter("good_proxy:*"):
         n += 1
     return n
+
 
 async def health_summary() -> dict:
     t0 = time.perf_counter()
@@ -31,5 +37,5 @@ async def health_summary() -> dict:
     return {
         "tor": "ok" if tor_ok else "fail",
         "good_proxies": proxy_cnt,
-        "uptime": f"{time.perf_counter()-t0:.3f}s"
+        "uptime": f"{time.perf_counter()-t0:.3f}s",
     }

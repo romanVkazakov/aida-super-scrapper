@@ -1,6 +1,6 @@
 from app.log_config import init_logging
+
 init_logging(__name__)
-from app.settings import get_settings
 import random
 import redis
 import os
@@ -11,6 +11,7 @@ r = redis.from_url(REDIS_URL)
 
 # Файл со списком прокси (по одному на строку, без комментариев)
 PROXIES_FILE = "/app/proxies.txt"
+
 
 def get_proxy():
     return None
@@ -32,13 +33,16 @@ def get_proxy():
     # fallback: случайный из файла proxies.txt
     try:
         with open(PROXIES_FILE, "r") as f:
-            lines = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+            lines = [
+                line.strip() for line in f if line.strip() and not line.startswith("#")
+            ]
         if lines:
             return random.choice(lines)
     except Exception:
         pass
 
     return "socks5://tor:9050"
+
 
 def ban_proxy(proxy):
     """

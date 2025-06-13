@@ -1,16 +1,28 @@
-import asyncio, httpx, time, ipaddress, redis
+import asyncio
+import httpx
+import time
+import ipaddress
+import redis
 
 # ─────────── настройки ────────────────────────────────────────────────────────
-CHECK_URL       = "http://example.com/ping"
-CONCURRENCY     = 300          # сколько одновременных проверок
-TIMEOUT         = 4            # секунд на один запрос
-GOOD_LIMIT      = 300          # в Redis оставляем не больше N лучших
-TTL_MIN, TTL_MAX = 300, 3600   # границы адаптивного TTL (сек)
+CHECK_URL = "http://example.com/ping"
+CONCURRENCY = 300  # сколько одновременных проверок
+TIMEOUT = 4  # секунд на один запрос
+GOOD_LIMIT = 300  # в Redis оставляем не больше N лучших
+TTL_MIN, TTL_MAX = 300, 3600  # границы адаптивного TTL (сек)
 
-r         = redis.Redis(host="redis", decode_responses=True)
-PRIV_NETS = [ipaddress.ip_network(net) for net in
-             ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
-              "169.254.0.0/16", "127.0.0.0/8")]
+r = redis.Redis(host="redis", decode_responses=True)
+PRIV_NETS = [
+    ipaddress.ip_network(net)
+    for net in (
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "169.254.0.0/16",
+        "127.0.0.0/8",
+    )
+]
+
 
 # ─────────── вспомогалки ──────────────────────────────────────────────────────
 def _is_private(proxy: str) -> bool:
@@ -20,16 +32,17 @@ def _is_private(proxy: str) -> bool:
     except ValueError:
         return True
 
+
 async def _probe(proxy: str) -> tuple[str, float | None]:
     """возвращает (proxy, rtt_ms)  или (proxy, None) если умер"""
     start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(
-                proxies=f"http://{proxy}", timeout=TIMEOUT) as c:
+        async with httpx.AsyncClient(proxies=f"http://{proxy}", timeout=TIMEOUT) as c:
             await c.get(CHECK_URL)
         return proxy, (time.perf_counter() - start) * 1_000
     except Exception:
         return proxy, None
+
 
 # ─────────── публичная точка входа ────────────────────────────────────────────
 async def check(limit: int = GOOD_LIMIT) -> None:
@@ -41,14 +54,16 @@ async def check(limit: int = GOOD_LIMIT) -> None:
 
     # 2. пуляем проверки пачками
     sem = asyncio.Semaphore(CONCURRENCY)
+
     async def worker(p):
         async with sem:
             return await _probe(p)
+
     alive = [res async for res in asyncio.as_completed(map(worker, raw))]
 
     # 3. фильтруем, сортируем по RTT
     alive = [(p, rtt) for p, rtt in await asyncio.gather(*alive) if rtt]
-    alive.sort(key=lambda t: t[1])          # fastest first
+    alive.sort(key=lambda t: t[1])  # fastest first
 
     # 4. пишем в Redis c адаптивным TTL
     for proxy, rtt in alive[:limit]:

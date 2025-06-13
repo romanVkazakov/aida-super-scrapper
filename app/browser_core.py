@@ -1,7 +1,9 @@
-import aiohttp, logging
+import aiohttp
+import logging
 
 log = logging.getLogger("browser_core")
 TIMEOUT = aiohttp.ClientTimeout(total=20)
+
 
 async def fetch_html(url: str) -> str:
     """

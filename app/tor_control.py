@@ -5,7 +5,11 @@ tor_control.py  — lazy NEWNYM helper
 • Хранит пул из 3 быстрых exit-нод; каждый renew() берёт следующую.
 • Если контрол-порт недоступен — renew() ничего не делает, приложение не падает.
 """
-import socket, itertools, time, logging
+
+import socket
+import itertools
+import time
+import logging
 from stem import Signal
 from stem.control import Controller
 from stem import SocketError as StemSocketError
@@ -13,10 +17,11 @@ from stem import SocketError as StemSocketError
 CTRL_HOST = "tor"
 CTRL_PORT = 9051
 
-_log   = logging.getLogger("tor_control")
-_ctrl  = None                 # type: Controller | None
-_exits = []                   # fingerprints
-_cycle = None                 # itertools.cycle
+_log = logging.getLogger("tor_control")
+_ctrl = None  # type: Controller | None
+_exits = []  # fingerprints
+_cycle = None  # itertools.cycle
+
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 def _connect():
@@ -34,15 +39,18 @@ def _connect():
         _ctrl = None
     return _ctrl
 
+
 def _load_exits(n: int = 3):
     """Fetch top-N exit fingerprints by bandwidth."""
     ctl = _connect()
     if not ctl:
         return []
-    exits = [r for r in ctl.get_network_statuses()
-             if r.exit_policy.is_exiting_allowed()]
+    exits = [
+        r for r in ctl.get_network_statuses() if r.exit_policy.is_exiting_allowed()
+    ]
     exits.sort(key=lambda r: r.bandwidth or 0, reverse=True)
     return [r.fingerprint for r in exits[:n]]
+
 
 # ── public API ────────────────────────────────────────────────────────────────
 def renew():
@@ -50,7 +58,7 @@ def renew():
     global _cycle, _exits
     ctl = _connect()
     if not ctl:
-        return                      # контрол-порт недоступен → тихо выходим
+        return  # контрол-порт недоступен → тихо выходим
 
     if not _exits:
         _exits = _load_exits()
@@ -58,16 +66,16 @@ def renew():
 
     exit_fp = None
     if _cycle:
-        idx     = next(_cycle)
+        idx = next(_cycle)
         exit_fp = _exits[idx]
         try:
             ctl.set_conf("ExitNodes", exit_fp)
-            _log.info("Switching to exit %d/%d  %s", idx+1, len(_exits), exit_fp)
+            _log.info("Switching to exit %d/%d  %s", idx + 1, len(_exits), exit_fp)
         except Exception as e:
             _log.warning("set_conf ExitNodes failed: %s", e)
 
     try:
         ctl.signal(Signal.NEWNYM)
-        time.sleep(1)               # Tor рекомендует ≥ 1 с для постройки цепи
+        time.sleep(1)  # Tor рекомендует ≥ 1 с для постройки цепи
     except StemSocketError as e:
         _log.warning("NEWNYM failed: %s", e)

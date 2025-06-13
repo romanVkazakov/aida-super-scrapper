@@ -1,6 +1,8 @@
 from app.log_config import init_logging
+
 init_logging(__name__)
-import json, re
+import json
+import re
 from bs4 import BeautifulSoup
 from trafilatura import extract, fetch_url
 from newspaper import Article
@@ -8,6 +10,7 @@ from readability import Document
 from lxml import html as lh
 
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
 
 def _title_date_from_html(raw_html: str):
     """Ищем title и дату в <meta>, <title> и JSON-LD."""
@@ -21,10 +24,15 @@ def _title_date_from_html(raw_html: str):
 
     # ----- DATE в <meta> -----
     date = None
-    for attr in ("article:published_time", "og:published_time",
-                 "publishdate", "pubdate"):
-        tag = soup.find("meta", attrs={"property": attr}) or \
-              soup.find("meta", attrs={"name": attr})
+    for attr in (
+        "article:published_time",
+        "og:published_time",
+        "publishdate",
+        "pubdate",
+    ):
+        tag = soup.find("meta", attrs={"property": attr}) or soup.find(
+            "meta", attrs={"name": attr}
+        )
         if tag and tag.get("content") and DATE_RE.search(tag["content"]):
             date = DATE_RE.search(tag["content"]).group(0)
             break
@@ -47,6 +55,7 @@ def _title_date_from_html(raw_html: str):
 
     return title or "", date
 
+
 def smart_extract(url: str, raw_html: str):
     if not raw_html:
         raw_html = fetch_url(url)
@@ -56,21 +65,23 @@ def smart_extract(url: str, raw_html: str):
     if doc_str:
         j = json.loads(doc_str)
         title = j.get("title")
-        date  = j.get("date")
+        date = j.get("date")
         if not title or not date:
             t2, d2 = _title_date_from_html(raw_html)
             title = title or t2
-            date  = date  or d2
+            date = date or d2
         return {"url": url, "title": title, "publish_date": date, "text": j.get("text")}
 
     # 2) Newspaper3k
     try:
-        art = Article(url); art.download(input_html=raw_html); art.parse()
+        art = Article(url)
+        art.download(input_html=raw_html)
+        art.parse()
         title, date = art.title, art.publish_date
         if not title or not date:
             t2, d2 = _title_date_from_html(raw_html)
             title = title or t2
-            date  = date  or d2
+            date = date or d2
         return {
             "url": url,
             "title": title,

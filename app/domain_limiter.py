@@ -1,4 +1,5 @@
 from app.log_config import init_logging
+
 init_logging(__name__)
 from app.settings import get_settings
 import asyncio
@@ -9,6 +10,7 @@ from urllib.parse import urlparse
 _last_access = {}
 # Минимальная задержка (секунд) между запросами к одному и тому же домену
 MIN_DELAY = get_settings().MIN_DELAY
+
 
 async def throttle(url: str):
     domain = urlparse(url).netloc

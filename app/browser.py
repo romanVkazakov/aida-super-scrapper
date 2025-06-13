@@ -1,8 +1,9 @@
 import logging
 from app.tor_control import renew
-from app.browser_core import fetch_html as _core      # оригинальная реализация
+from app.browser_core import fetch_html as _core  # оригинальная реализация
 
 log = logging.getLogger("browser")
+
 
 async def fetch_html(url: str, max_retries: int = 3) -> str:
     """

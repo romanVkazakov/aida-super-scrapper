@@ -1,10 +1,12 @@
-import logging, json, uuid
+import logging
+import uuid
 from pythonjsonlogger import jsonlogger
+
 
 def init_logging(service: str):
     handler = logging.StreamHandler()
     fmt = jsonlogger.JsonFormatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s trace_id'
+        "%(asctime)s %(levelname)s %(name)s %(message)s trace_id"
     )
     handler.setFormatter(fmt)
     root = logging.getLogger()
@@ -17,5 +19,6 @@ def init_logging(service: str):
         def filter(self, record):
             record.trace_id = uuid.uuid4().hex
             return True
+
     root.addFilter(TraceFilter())
     logging.getLogger(service).info("logger_init", extra={"service": service})
