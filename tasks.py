@@ -1,16 +1,8 @@
-from celery import Celery
-import os
-
-app = Celery(
-    "aida",
-    broker=os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
-    backend=os.getenv("CELERY_BACKEND_URL", "redis://redis:6379/1"),
-)
-
 """Celery tasks (один файл)."""
 
+from celery_app import celery as app
 import asyncio
-from app.proxy_health import check
+from proxy_health import check
 
 
 @app.task(name="proxy_health.check")
@@ -36,40 +28,25 @@ def setup_periodic_tasks(sender, **_):
     sender.add_periodic_task(60.0, proxy_health_check.s(), name="proxy health check")
 
 
-import json
-import logging
-import redis
-from celery.schedules import crontab
+@app.task(name="proxy_health.refresh")
+def proxy_refresh_good_proxies() -> int:
+    """Оставляет в Redis только рабочие прокси."""
+    import time
+    import redis
+    from app.proxy_health import check
 
-log = logging.getLogger(__name__)
-r = redis.Redis(host="redis")  # если в compose другой host – поправь!
+    r = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
+    ttl = 3600
+    now = int(time.time())
 
+    stored: set[str] = {k.split(":", 1)[1] for k in r.scan_iter("good_proxy:*")}
+    alive: set[str] = set(check())
 
-@app.task
-def flush_bad_cache():
-    """Удаляем html_cache:* у которых поле url начинается с '<html'."""
-    deleted = 0
-    for key in r.scan_iter("html_cache:*"):
-        try:
-            data = json.loads(r.get(key) or "{}")
-            if str(data.get("url", "")).lstrip().startswith("<html"):
-                r.delete(key)
-                deleted += 1
-        except Exception:
-            r.delete(key)
-            deleted += 1
-    log.info("flush_bad_cache removed %s keys", deleted)
-    return deleted
+    pipe = r.pipeline()
+    for p in alive:
+        pipe.setex(f"good_proxy:{p}", ttl, now)
+    for p in stored - alive:
+        pipe.delete(f"good_proxy:{p}")
+    pipe.execute()
 
-
-#  ───── Celery beat расписание ─────
-from celery import current_app
-
-current_app.conf.beat_schedule.update(
-    {
-        "flush-bad-cache-every-10min": {
-            "task": "tasks.flush_bad_cache",
-            "schedule": crontab(minute="*/10"),
-        }
-    }
-)
+    return len(stored - alive)
