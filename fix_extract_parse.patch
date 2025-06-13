@@ -1,0 +1,12 @@
+*** Begin Patch
+*** Update File: app/extract.py
+@@
+-def parse(
+-    url: str,
+-    html: Optional[str] = None,
+-) -> dict:
+-    return smart_extract(url=url, html=html)
++def parse(html: str, url: str) -> dict:
++    \"\"\"Парсит переданный HTML для заданного URL.\"\"\"
++    return smart_extract(url=url, html=html)
+*** End Patch

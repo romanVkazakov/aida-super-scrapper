@@ -1,0 +1,10 @@
+*** Begin Patch
+*** Update File: app/extract.py
+@@
+- def parse(url: str, html: Optional[str] = None) -> Dict[str, Any]:
+-     \"\"\"Simplified alias to smart_extract for static HTML input.\"\"\"
+-     return smart_extract(url, html)
++ def parse(html: str, url: str) -> Dict[str, Any]:
++     \"\"\"Simplified alias to smart_extract for static HTML input.\"\"\"
++     return smart_extract(url=url, html=html)
+*** End Patch
