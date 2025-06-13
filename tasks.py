@@ -10,7 +10,7 @@ app = Celery(
 """Celery tasks (один файл)."""
 
 import asyncio
-from proxy_health import check
+from app.proxy_health import check
 
 
 @app.task(name="proxy_health.check")
