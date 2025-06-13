@@ -1,6 +1,14 @@
+from celery import Celery
+import os
+
+app = Celery(
+    "aida",
+    broker=os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
+    backend=os.getenv("CELERY_BACKEND_URL", "redis://redis:6379/1"),
+)
+
 """Celery tasks (один файл)."""
 
-from celery_app import celery as app
 import asyncio
 from proxy_health import check
 
